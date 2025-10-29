@@ -1,0 +1,409 @@
+openapi: 3.0.3
+info:
+  title: API del Asistente de Estudio Inteligente (AESI)
+  description: |
+    API RESTful para la gestión de notas, proyectos, resúmenes generados por IA,
+    y referencias bibliográficas para estudiantes universitarios.
+  contact:
+    name: |
+      Equipo 16. Contactos:
+      - Alexys Martín Coate Reyes : A01746998@tec.mx
+      - Kenia Lizeth Arzate Gutiérrez : A01796240@tec.mx
+      - Michelle Alicia Graver Aguilar :  A01242013@tec.mx
+      - Efrén Alejandro Barroso Llanes : A01795861@tec.mx
+    url: https://github.com/Equipo16/orbis-api
+    email: A01746998@tec.mx
+  version: 1.0.0
+servers:
+- url: https://Equipo16/orbis-api
+  description: Servidor principal de la API
+paths:
+  /notas:
+    get:
+      tags:
+      - Notas
+      summary: Obtiene una lista paginada de todas las notas del usuario.
+      operationId: listarNotas
+      parameters:
+      - name: proyectoId
+        in: query
+        description: Filtrar notas por el ID del proyecto.
+        required: false
+        schema:
+          type: integer
+      - name: limite
+        in: query
+        description: Límite de resultados por página.
+        required: false
+        schema:
+          type: integer
+          default: 25
+      responses:
+        "200":
+          description: Lista de notas obtenida con éxito.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Nota"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      tags:
+      - Notas
+      summary: Crea una nueva nota para el usuario actual.
+      operationId: crearNota
+      requestBody:
+        description: Datos de la nueva nota.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Nota"
+        required: true
+      responses:
+        "201":
+          description: Nota creada satisfactoriamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nota"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+  /notas/{notaId}:
+    get:
+      tags:
+      - Notas
+      summary: Obtiene el detalle de una nota por su ID.
+      operationId: obtenerNotaPorId
+      parameters:
+      - name: notaId
+        in: path
+        description: ID único de la nota.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Detalle de la nota obtenido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nota"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    put:
+      tags:
+      - Notas
+      summary: Actualiza completamente una nota existente.
+      operationId: actualizarNota
+      parameters:
+      - name: notaId
+        in: path
+        description: ID único de la nota a actualizar.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Nuevos datos para reemplazar la nota.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Nota"
+        required: true
+      responses:
+        "200":
+          description: Nota actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nota"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+    delete:
+      tags:
+      - Notas
+      summary: Elimina una nota por su ID.
+      operationId: eliminarNota
+      parameters:
+      - name: notaId
+        in: path
+        description: ID único de la nota a eliminar.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Nota eliminada con éxito (Sin Contenido).
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /proyectos:
+    get:
+      tags:
+      - Proyectos
+      summary: Lista todos los proyectos o clases del estudiante.
+      operationId: listarProyectos
+      responses:
+        "200":
+          description: Lista de proyectos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Proyecto"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    post:
+      tags:
+      - Proyectos
+      summary: Crea un nuevo proyecto/clase.
+      operationId: crearProyecto
+      requestBody:
+        description: Datos para el nuevo proyecto.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Proyecto"
+        required: true
+      responses:
+        "201":
+          description: Proyecto creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proyecto"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+  /proyectos/{proyectoId}:
+    delete:
+      tags:
+      - Proyectos
+      summary: Elimina un proyecto y todas sus notas asociadas.
+      operationId: eliminarProyecto
+      parameters:
+      - name: proyectoId
+        in: path
+        description: ID del proyecto a eliminar.
+        required: true
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: Proyecto eliminado.
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /ia/resumen:
+    post:
+      tags:
+      - IA
+      - Resumenes
+      summary: Solicita a la IA generar un resumen de una nota.
+      operationId: generarResumenIA
+      requestBody:
+        description: ID de la nota para la que se generará el resumen.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ia_resumen_body"
+        required: true
+      responses:
+        "202":
+          description: Solicitud de resumen aceptada y en proceso.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumenIA"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /ia/resumenes/{resumenId}:
+    get:
+      tags:
+      - IA
+      - Resumenes
+      summary: Obtiene el resumen generado por IA.
+      operationId: obtenerResumenIA
+      parameters:
+      - name: resumenId
+        in: path
+        description: ID del resumen generado.
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Resumen recuperado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumenIA"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /configuracion/notificaciones:
+    get:
+      tags:
+      - Configuracion
+      summary: Obtiene las preferencias de notificación del usuario.
+      operationId: obtenerConfigNotificaciones
+      responses:
+        "200":
+          description: Preferencias de notificación.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inline_response_200"
+    put:
+      tags:
+      - Configuracion
+      summary: Actualiza las preferencias de notificación del usuario.
+      operationId: actualizarConfigNotificaciones
+      requestBody:
+        description: Nuevas preferencias.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/configuracion_notificaciones_body"
+        required: true
+      responses:
+        "200":
+          description: Configuración actualizada.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+components:
+  schemas:
+    Nota:
+      required:
+      - contenido
+      - id
+      - titulo
+      - usuarioId
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único de la nota.
+          format: uuid
+        usuarioId:
+          type: integer
+          description: ID del usuario propietario de la nota.
+          format: int64
+        proyectoId:
+          type: integer
+          description: ID del proyecto/clase a la que pertenece (opcional).
+        titulo:
+          type: string
+          description: Título de la nota.
+        contenido:
+          type: string
+          description: Cuerpo de la nota (puede ser Markdown o HTML).
+        fechaCreacion:
+          type: string
+          description: Marca de tiempo de la creación.
+          format: date-time
+      description: Contenido principal de estudio creado por el usuario.
+    Proyecto:
+      required:
+      - id
+      - nombre
+      - usuarioId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID único del proyecto.
+        usuarioId:
+          $ref: "#/components/schemas/Nota/properties/usuarioId"
+        nombre:
+          type: string
+          description: Nombre del proyecto (Ej. "Cálculo I" o "Proyecto Final").
+        descripcion:
+          type: string
+          description: Breve descripción.
+        estado:
+          type: string
+          enum:
+          - activo
+          - archivado
+          - completado
+      description: Agrupación de notas relacionadas (Ej. una Clase o Tarea).
+    ResumenIA:
+      required:
+      - contenidoResumen
+      - id
+      - notaId
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID único del resumen.
+          format: uuid
+        notaId:
+          $ref: "#/components/schemas/Nota/properties/id"
+        contenidoResumen:
+          type: string
+          description: El texto resumido generado por la IA.
+        tokensUsados:
+          type: integer
+          description: Cantidad de tokens consumidos en la operación de IA.
+      description: Resumen generado por un modelo de lenguaje (LLM) a partir de una nota.
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: integer
+          description: Código de error HTTP.
+        mensaje:
+          type: string
+          description: Descripción del error.
+    ia_resumen_body:
+      required:
+      - notaId
+      type: object
+      properties:
+        notaId:
+          $ref: "#/components/schemas/Nota/properties/id"
+    inline_response_200:
+      type: object
+      properties:
+        email:
+          type: boolean
+        push:
+          type: boolean
+    configuracion_notificaciones_body:
+      type: object
+      properties:
+        email:
+          type: boolean
+        push:
+          type: boolean
+  responses:
+    NotFoundError:
+      description: Recurso no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: 404
+            mensaje: El ID de la nota no existe.
+    BadRequestError:
+      description: Solicitud mal formada (datos de entrada incorrectos).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: 400
+            mensaje: El campo 'titulo' es requerido.
+    UnauthorizedError:
+      description: Autenticación requerida.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            codigo: 401
